@@ -1,0 +1,6 @@
+* text=auto
+*.bat text eol=crlf
+*.exe binary
+*.dll binary
+*.wav binary
+*.flac binary

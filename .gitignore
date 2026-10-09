@@ -1,0 +1,18 @@
+# local environment and downloaded models (recreated by setup_windows.bat)
+env/
+models_cache/
+# downloaded / uploaded datasets (re-download from the Batch page)
+data/uploads/*
+!data/uploads/.keep
+data/librispeech*/
+data/fleurs_*/
+# run outputs
+results/*
+!results/.keep
+# python / OS clutter
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+Thumbs.db
+web/static/style.css

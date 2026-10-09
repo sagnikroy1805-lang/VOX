@@ -1,0 +1,25 @@
+# --- core numerics / audio ---
+numpy>=1.24
+scipy>=1.10
+soundfile>=0.12
+pandas>=2.0
+pyarrow>=14
+
+# --- distributed processing ---
+pyspark==4.0.1          # needs Java 17+ (setup_windows.bat installs it via conda)
+
+# --- deep-learning ASR models ---
+torch>=2.1
+transformers>=4.40
+huggingface_hub>=0.23
+pocketsphinx>=5.0       # offline classical baseline (no download needed)
+pykakasi>=2.2         # Japanese kanji -> kana for fair CER scoring
+
+# --- web app ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+
+# --- tests ---
+jiwer>=3.0
+pytest>=8
