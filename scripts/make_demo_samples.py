@@ -5,6 +5,8 @@ tried before downloading LibriSpeech. Sentences are from the IEEE "Harvard
 sentences" list (phonetically balanced, standard in speech testing).
 Requires espeak-ng on PATH. Usage:  python scripts/make_demo_samples.py
 """
+# WHAT THIS FILE DOES: developer tool that CREATED the demo audio in data/samples*, using the free
+# speech synthesiser espeak-ng. You do not need to run it - its output is already in the project.
 import csv
 import subprocess
 import sys
@@ -13,9 +15,12 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
+# project folder
 ROOT = Path(__file__).resolve().parent.parent
+# English clips are written to data/samples/
 OUT = ROOT / "data" / "samples"
 
+# 40 'Harvard sentences': standard phonetically balanced test sentences
 SENTENCES = [
     "The birch canoe slid on the smooth planks.",
     "Glue the sheet to the dark blue background.",
@@ -58,8 +63,10 @@ SENTENCES = [
     "The meal was cooked before the bell rang.",
     "What joy there is in living.",
 ]
+# 4 different synthetic voices, used in turn
 VOICES = ["en-us", "en", "en-us+m3", "en+f2"]
 
+# 10 Spanish sentences -> data/samples_es/
 SPANISH = [
     "El perro corre rápido por el parque.",
     "Mañana vamos a la playa con mis amigos.",
@@ -73,6 +80,7 @@ SPANISH = [
     "Hace mucho calor en verano.",
 ]
 # espeak-ng can only pronounce kana, so these sentences are written in kana.
+# 10 Japanese sentences -> data/samples_ja/
 JAPANESE = [
     "おはようございます。",
     "きょうは いい てんき です ね。",
@@ -85,10 +93,12 @@ JAPANESE = [
     "コーヒー を ください。",
     "にほんご を べんきょう して います。",
 ]
+# language -> (folder, sentences, voices)
 EXTRA = {"es": ("samples_es", SPANISH, ["es", "es-419"]),
          "ja": ("samples_ja", JAPANESE, ["ja"])}
 
 
+# make_lang(): create the Spanish or Japanese clips and their manifest.csv
 def make_lang(lang):
     folder, sentences, voices = EXTRA[lang]
     out = ROOT / "data" / folder
@@ -96,11 +106,14 @@ def make_lang(lang):
     rows = []
     for i, text in enumerate(sentences):
         name = f"{lang}_{i:02d}.wav"
+        # run espeak-ng: speak the sentence and save it as a WAV file
         subprocess.run(["espeak-ng", "-v", voices[i % len(voices)], "-s", "140",
                         "-w", str(out / name), text], check=True)
+        # manifest row; Japanese reference without spaces (Japanese is written without them)
         rows.append({"id": f"{lang}_{i:02d}", "path": name,
                      "reference": text.replace(" ", "") if lang == "ja" else text,
                      "language": lang})
+    # write manifest.csv: id, path, reference, language
     with open(out / "manifest.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["id", "path", "reference", "language"])
         w.writeheader()
@@ -108,6 +121,7 @@ def make_lang(lang):
     print(f"wrote {len(rows)} {lang} files to {out}")
 
 
+# main(): create Spanish + Japanese clips, then the 40 English clips
 def main():
     for lang in EXTRA:
         make_lang(lang)
@@ -116,16 +130,20 @@ def main():
     for i, text in enumerate(SENTENCES):
         voice = VOICES[i % len(VOICES)]
         tmp = OUT / f"_tmp_{i}.wav"
+        # espeak-ng writes a temporary WAV, which we read back as numbers
         subprocess.run(["espeak-ng", "-v", voice, "-s", "150", "-w", str(tmp), text], check=True)
         y, sr = sf.read(tmp, dtype="float32")
         tmp.unlink()
+        # add 0.6 s of silence before and after (so the trimming step has something to remove)
         pad = np.zeros(int(sr * 0.6), np.float32)          # silence to exercise trimming
         y = np.concatenate([pad, y, pad])
+        # every third file is FLAC, the rest WAV (tests that both formats are read)
         ext = "flac" if i % 3 == 0 else "wav"               # mixed formats on purpose
         name = f"harvard_{i:02d}.{ext}"
         sf.write(OUT / name, y, sr)
         rows.append({"id": f"harvard_{i:02d}", "path": name, "reference": text,
                      "language": "en"})
+    # write data/samples/manifest.csv
     with open(OUT / "manifest.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["id", "path", "reference", "language"])
         w.writeheader()
@@ -133,5 +151,6 @@ def main():
     print(f"wrote {len(rows)} files to {OUT}")
 
 
+# runs when started as 'python scripts/make_demo_samples.py'
 if __name__ == "__main__":
     sys.exit(main())

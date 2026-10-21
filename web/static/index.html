@@ -4,16 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOX — Distributed Speech-to-Text</title>
+<!-- Runs before the page is drawn: apply the saved light/dark theme so the page never flashes the wrong colours -->
 <script>
   try { const t = localStorage.getItem("vox-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         document.documentElement.dataset.theme = t; } catch (e) { document.documentElement.dataset.theme = "light"; }
 </script>
+<!-- Fonts: Geist (text), Geist Mono (numbers and code), Noto Sans JP (Japanese text) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <!-- Tailwind CSS v4, bundled locally so VOX also works offline -->
 <script src="/static/vendor/tailwind.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%23ff5a36'/><path d='M9 13v6M13 9v14M17 11v10M21 14v4' stroke='white' stroke-width='2.6' stroke-linecap='round'/></svg>">
+<!-- Theme: colour tokens (bg, card, line, fg, mute, acc = coral, acc2 = violet, ok = green) and the dark-theme versions,
+     plus small reusable styles (cards, buttons, tabs, tiles, tables, alignment colours). Tailwind reads this block. -->
 <style type="text/tailwindcss">
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 @theme {
@@ -96,9 +100,11 @@
 #cWave { height: 96px }
 </style>
 </head>
+<!-- PAGE BODY: header, tab bar, five tab panels, footer -->
 <body class="min-h-screen bg-bg font-sans text-fg antialiased">
 <div class="glow"></div><div class="glow b"></div>
 
+<!-- HEADER: VOX logo (bars animate while the server is busy), status chips and the light/dark button -->
 <header class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-4 px-5 pt-8 sm:px-10">
   <div class="flex items-center gap-3.5">
     <div id="eq" class="eq flex h-6 items-center"><span></span><span></span><span></span><span></span></div>
@@ -112,6 +118,7 @@
   </div>
 </header>
 
+<!-- TAB BAR: app.js shows the matching section when a tab is clicked -->
 <nav id="tabs" class="mx-auto mt-6 flex max-w-[1400px] gap-7 overflow-x-auto border-b border-line px-5 sm:px-10">
   <button data-tab="transcribe" class="tabbtn active">Transcribe</button>
   <button data-tab="batch" class="tabbtn">Batch</button>
@@ -120,11 +127,13 @@
   <button data-tab="arch" class="tabbtn">How it works</button>
 </nav>
 
+<!-- MAIN AREA: one <section> per tab -->
 <main class="mx-auto max-w-[1400px] px-5 pb-16 pt-8 sm:px-10">
 
 <!-- ================================================== TRANSCRIBE -->
 <section id="tab-transcribe" class="tab active">
   <div class="grid gap-6 lg:grid-cols-[5fr_7fr]">
+    <!-- LEFT CARD: input (upload / drag-and-drop / record) and settings -->
     <div class="card">
       <div class="title">Audio</div>
       <div class="sub">Upload a file or record from your microphone.</div>
@@ -134,6 +143,7 @@
         <div class="mt-1 text-sm text-mute">wav, flac, mp3, ogg, m4a — or <a href="#" id="pick" class="text-acc underline underline-offset-4">browse</a></div>
       </div>
       <div class="mt-4 flex min-w-0 items-center gap-3">
+        <!-- Record button: uses the microphone (MediaRecorder in app.js) -->
         <button id="recBtn" class="btn shrink-0"><span class="rec-dot"></span><span id="recLabel">Record</span></button>
         <span id="recTime" class="font-mono text-sm text-acc"></span>
         <span id="fileName" class="truncate font-mono text-xs text-mute"></span>
@@ -152,20 +162,25 @@
           </div>
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <!-- Model dropdown: filled from /api/status by loadStatus() in app.js -->
           <label class="lbl">Model<select id="tModel" class="modelSel inp"></select></label>
           <label class="lbl">Noise (SNR)
             <select id="tSnr" class="inp"><option value="">None</option><option value="20">20 dB</option><option value="10">10 dB</option><option value="5">5 dB</option><option value="0">0 dB</option></select>
           </label>
         </div>
+        <!-- Trim silence checkbox -> audio.trim_silence() on the server -->
         <label class="flex items-center gap-2.5 text-sm text-fg"><input type="checkbox" id="tTrim" checked class="h-4 w-4 accent-[var(--color-acc)]"> Trim silence</label>
         <label class="lbl">Reference transcript (optional, enables WER / CER)
+          <!-- Optional reference text -> enables WER/CER and the coloured word alignment -->
           <textarea id="tRef" rows="2" class="inp" placeholder="The birch canoe slid on the smooth planks."></textarea>
         </label>
         <div id="tHint" class="hidden rounded-xl bg-acc/10 px-3.5 py-2.5 text-sm text-acc"></div>
       </div>
+      <!-- Transcribe button -> POST /api/transcribe -->
       <button id="tGo" class="btn btn-go mt-7" disabled>Transcribe</button>
     </div>
 
+    <!-- RIGHT CARD: transcript, detected language, summary tiles, alignment and waveforms -->
     <div class="card">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div><div class="title">Transcript</div><div class="sub">Text, timing and accuracy.</div></div>
@@ -177,6 +192,7 @@
         <div id="tTiles" class="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4"></div>
         <div id="tAlign" class="align mt-6 rounded-2xl border border-line p-4 font-mono text-sm leading-8" hidden></div>
         <div class="h3">Waveform — raw (top), trimmed and normalised (bottom)</div>
+        <!-- Canvas for the raw vs processed waveform picture (drawWave in app.js) -->
         <canvas id="cWave" class="w-full rounded-2xl bg-soft"></canvas>
       </div>
     </div>
@@ -186,16 +202,20 @@
 <!-- ======================================================= BATCH -->
 <section id="tab-batch" class="tab">
   <div class="grid gap-6 lg:grid-cols-[5fr_7fr]">
+    <!-- LEFT CARD: choose the dataset and the run settings -->
     <div class="card">
       <div class="title">Batch job</div>
       <div class="sub">Each file becomes a row of a Spark DataFrame. Partitions are transcribed in parallel by separate Python workers using <span class="font-mono text-fg">mapInPandas</span>.</div>
       <div class="mt-7 space-y-5">
+        <!-- Dataset dropdown: every folder under data/ that has a manifest.csv -->
         <label class="lbl">Dataset<select id="bData" class="dataSel inp"></select></label>
         <div class="flex flex-wrap gap-2">
+          <!-- Download buttons -> POST /api/jobs/download (datasets.py) -->
           <button class="btn !py-1.5 text-xs" data-download="dummy">LibriSpeech sample</button>
           <button class="btn !py-1.5 text-xs" data-download="test-clean">LibriSpeech test-clean</button>
           <button class="btn !py-1.5 text-xs" data-download="fleurs-es">FLEURS Spanish</button>
           <button class="btn !py-1.5 text-xs" data-download="fleurs-ja">FLEURS Japanese</button>
+          <!-- Upload your own audio -> POST /api/upload -->
           <label class="btn !py-1.5 text-xs">Upload files<input type="file" id="bUpload" multiple accept="audio/*,.flac,.wav,.mp3,.txt" hidden></label>
         </div>
         <div class="lbl">Language
@@ -204,6 +224,7 @@
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <!-- Model, engine (Spark or single-node), Spark workers, file limit, noise level, output -->
           <label class="lbl col-span-2 sm:col-span-1">Model<select id="bModel" class="modelSel inp"></select></label>
           <label class="lbl">Engine<select id="bEngine" class="inp"><option value="spark">Spark</option><option value="local">Single-node</option></select></label>
           <label class="lbl">Workers<select id="bWorkers" class="inp"></select></label>
@@ -212,13 +233,16 @@
           <label class="lbl">Output<select id="bTask" class="inp"><option value="transcribe">Transcribe</option><option value="translate">To English</option></select></label>
         </div>
       </div>
+      <!-- Run batch -> POST /api/jobs/batch, then the page polls for progress -->
       <button id="bGo" class="btn btn-go mt-7">Run batch</button>
+      <!-- Progress bar + log, shown while the job runs -->
       <div id="bJob" class="mt-6" hidden>
         <div class="bar"><div></div></div>
         <div id="bProg" class="mt-2.5 font-mono text-xs text-mute"></div>
         <pre id="bLog" class="logbox"></pre>
       </div>
     </div>
+    <!-- RIGHT CARD: corpus WER/CER tiles, files per Spark worker, per-file table, CSV download -->
     <div class="card">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div><div class="title">Results</div><div class="sub">Corpus accuracy, throughput and work distribution.</div></div>
@@ -230,6 +254,7 @@
         <div class="h3">Files per Spark worker</div>
         <div id="bDist" class="flex flex-col gap-2.5"></div>
         <div class="h3">Per-file output</div>
+        <!-- Per-file results table (filled by renderBatch in app.js) -->
         <div class="tbl"><table id="bTable"></table></div>
       </div>
     </div>
@@ -239,6 +264,7 @@
 <!-- =================================================== BENCHMARK -->
 <section id="tab-bench" class="tab">
   <div class="grid gap-6 lg:grid-cols-[5fr_7fr]">
+    <!-- LEFT CARD: dataset, model, limit and which worker counts to test -->
     <div class="card">
       <div class="title">Scalability benchmark</div>
       <div class="sub">The same processing kernel, run as a single-thread loop, a multithreaded single node, and on Spark with 1, 2, 4… workers.</div>
@@ -250,6 +276,7 @@
         </div>
         <div class="lbl">Spark workers<div id="kWorkers" class="flex flex-wrap gap-2 normal-case tracking-normal"></div></div>
       </div>
+      <!-- Run benchmark -> POST /api/jobs/benchmark (benchmark.run_benchmark) -->
       <button id="kGo" class="btn btn-go mt-7">Run benchmark</button>
       <div id="kJob" class="mt-6" hidden>
         <div class="bar"><div></div></div>
@@ -257,9 +284,11 @@
         <pre id="kLog" class="logbox"></pre>
       </div>
     </div>
+    <!-- RIGHT CARD: wall-time bars + speed-up chart, results table, saved history -->
     <div class="card">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div><div class="title">Speed-up</div><div class="sub">Wall time per run and speed-up against the single-thread baseline.</div></div>
+        <!-- History dropdown: earlier runs saved in results/ -->
         <select id="kHist" class="inp !w-auto !rounded-full !py-1.5 text-xs"></select>
       </div>
       <div id="kEmpty" class="empty mt-6">No benchmark yet.</div>
@@ -270,6 +299,7 @@
           <span class="flex items-center gap-2"><i class="inline-block h-0.5 w-4 bg-acc"></i>Speed-up</span>
           <span class="flex items-center gap-2"><i class="inline-block h-0 w-4 border-t-2 border-dashed border-acc2"></i>Ideal (linear)</span>
         </div>
+        <!-- Benchmark table: wall time, RTFx, speed-up, efficiency, model load, WER -->
         <div class="tbl mt-6"><table id="kTable"></table></div>
         <p id="kMeta" class="mt-3 text-xs text-mute"></p>
       </div>
@@ -280,6 +310,7 @@
 <!-- ======================================================= NOISE -->
 <section id="tab-noise" class="tab">
   <div class="grid gap-6 lg:grid-cols-[5fr_7fr]">
+    <!-- LEFT CARD: dataset, model and limit for the noise sweep -->
     <div class="card">
       <div class="title">Noise robustness</div>
       <div class="sub">White noise is mixed in at a controlled signal-to-noise ratio during preprocessing, then the dataset is re-transcribed on Spark.</div>
@@ -290,6 +321,7 @@
           <label class="lbl">Limit<input id="nLimit" type="number" min="1" placeholder="All" class="inp"></label>
         </div>
       </div>
+      <!-- Run SNR sweep -> POST /api/jobs/noise (benchmark.run_noise_sweep) -->
       <button id="nGo" class="btn btn-go mt-7">Run SNR sweep</button>
       <div id="nJob" class="mt-6" hidden>
         <div class="bar"><div></div></div>
@@ -297,6 +329,7 @@
         <pre id="nLog" class="logbox"></pre>
       </div>
     </div>
+    <!-- RIGHT CARD: WER / CER vs SNR chart, table and saved history -->
     <div class="card">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div><div class="title">Error rate vs SNR</div><div class="sub">Lower SNR means noisier audio.</div></div>
@@ -313,6 +346,7 @@
 
 <!-- ======================================================== ARCH -->
 <section id="tab-arch" class="tab">
+  <!-- Pipeline explanation and the live model table -->
   <div class="card mx-auto max-w-[1100px]">
     <div class="title">How VOX works</div>
     <div class="sub">A manifest of audio files is distributed by Spark to parallel Python workers, each running the full pipeline.</div>
@@ -332,15 +366,18 @@
       <div><div class="font-mono text-xs text-acc">03</div><div class="mt-1 font-medium">Evaluation</div><p class="mt-2 text-sm leading-relaxed text-mute">Language-aware normalisation and Levenshtein alignment. WER over words for English and Spanish; Japanese is scored per character after converting kanji to kana.</p></div>
     </div>
     <div class="h3 !mt-12">Models</div>
+    <!-- Model table (filled from /api/status) -->
     <div class="tbl"><table id="mTable"></table></div>
   </div>
 </section>
 </main>
 
+<!-- FOOTER -->
 <footer class="mx-auto max-w-[1400px] border-t border-line px-5 py-8 text-xs text-mute sm:px-10">
   VOX — ML Project (DA1) · Aaratrik Paul, Sagnik Roy, Kumar Chandramani, Divyanshu Kumar · VIT
 </footer>
 <div id="toast" class="fixed bottom-6 left-1/2 z-50 max-w-[90vw] -translate-x-1/2 rounded-full border border-line bg-card px-5 py-2.5 text-sm text-fg shadow-lg" hidden></div>
+<!-- All page behaviour lives in app.js (loaded last, after the page elements exist) -->
 <script src="/static/app.js"></script>
 </body>
 </html>
