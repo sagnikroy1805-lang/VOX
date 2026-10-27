@@ -46,7 +46,8 @@ void main() {
   // petal outline: rounded, widest past the middle, with the cherry-blossom notch at the tip
   float prof = pow(max(0.0, 1.0 - u * u), 0.5);
   float rad = R * (0.25 + 0.75 * prof);
-  rad *= 1.0 - 0.13 * exp(-pow(u / 0.16, 2.0)) * smoothstep(0.0, 1.0, R);
+  float un = u / 0.16;
+  rad *= 1.0 - 0.13 * exp(-un * un) * smoothstep(0.0, 1.0, R);
   float inside = (1.0 - smoothstep(rad - 0.004, rad + 0.004, r)) * step(abs(u), 1.0);
 
   vec3 a0 = texture2D(uA, vUv).rgb * (1.0 - uDim);
@@ -56,10 +57,11 @@ void main() {
   float t = clamp(r / max(R, 1e-3), 0.0, 1.0);
   vec3 pc = mix(uCrimson, uPinkDeep, smoothstep(0.0, 0.25, t));
   pc = mix(pc, uPink, smoothstep(0.25, 0.9, t));
-  float vein = pow(abs(sin(u * 9.0 + t * 2.0)), 18.0) * (1.0 - t) * 0.5;
+  float vein = pow(abs(sin(u * 4.5 + t * 1.5)), 24.0) * (1.0 - t) * 0.12;
   float rim = smoothstep(rad * 0.86, rad, r) * inside;
   float shade = 0.75 + 0.25 * (1.0 - abs(u));                  // cupped petal shading
-  vec3 petal = mix(b0, pc * shade, uTint * (0.55 - 0.35 * t)) + uPink * (vein * uTint * 0.6 + rim * uTint * 0.5);
+  float see = 1.0 - 0.7 * smoothstep(0.6, 1.6, R);            // big petals turn into clear windows
+  vec3 petal = mix(b0, pc * shade, uTint * (0.5 - 0.3 * t) * see) + uPink * (vein * see * uTint + rim * uTint * 0.35);
 
   vec3 col = mix(a0, petal, inside);
   // soft shadow of the petals on the old page
@@ -116,12 +118,12 @@ export async function play(fromTex, toTex, opts) {
   const tl = gsap.timeline({ paused: true });
   tl.to(U.uDim, { value: 0.45, duration: 0.7, ease: "power2.out" }, 0);
   // bud appears and swells
-  [0, 1, 2, 3, 4].forEach((i) => tl.to(petals, { [`p${i}`]: 0.07, duration: 0.45, ease: "back.out(2)" }, 0.05 + i * 0.03));
-  tl.to(U.uStamen, { value: 1, duration: 0.5, ease: "power2.out" }, 0.35);
+  [0, 1, 2, 3, 4].forEach((i) => tl.to(petals, { [`p${i}`]: 0.13, duration: 0.5, ease: "back.out(2)" }, 0.05 + i * 0.03));
+  tl.to(U.uStamen, { value: 1, duration: 0.5, ease: "power2.out" }, 0.5);
   tl.to(bloom, { strength: 0.8, duration: 0.6 }, 0.3);
   // petals unfold one after another and grow past the screen
-  tl.to(U.uOpen, { value: 1, duration: 0.9, ease: "power3.out" }, 0.45);
-  [0, 1, 2, 3, 4].forEach((i) => tl.to(petals, { [`p${i}`]: maxR, duration: 1.5, ease: "expo.inOut" }, 0.55 + i * 0.07));
+  tl.to(U.uOpen, { value: 1, duration: 0.7, ease: "power3.out" }, 0.3);
+  [0, 1, 2, 3, 4].forEach((i) => tl.to(petals, { [`p${i}`]: maxR, duration: 1.45, ease: "expo.inOut" }, 0.6 + i * 0.035));
   tl.to(U.uRot, { value: 0.15, duration: 2.0, ease: "power2.out" }, 0.3);
   // settle into the new page
   tl.to(U.uStamen, { value: 0, duration: 0.45, ease: "power2.in" }, 1.9);

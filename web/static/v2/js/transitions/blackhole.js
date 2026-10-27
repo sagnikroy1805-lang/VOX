@@ -84,12 +84,14 @@ void main() {
     float behind = step(0.0, q.y) * (1.0 - smoothstep(uRh * 0.95, uRh * 1.05, r));   // back half hidden by the hole
     float disk = band * (0.55 + flow) * dopp * uDisk * (1.0 - behind);
     // lensed image of the far side of the disk, arcing over the hole
-    float arc = exp(-pow((r - uRh * 1.45) / (uRh * 0.18), 2.0)) * smoothstep(-0.2, 0.6, d.y / r) * uDisk;
+    float ax = (r - uRh * 1.45) / (uRh * 0.18);
+    float arc = exp(-ax * ax) * smoothstep(-0.2, 0.6, d.y / r) * uDisk;
     col += dc * disk * 1.3 + mix(uPinkDeep, uPink, 0.5) * arc * (0.45 + 0.5 * flow);
   }
   // photon ring + event horizon
   if (uRh > 0.0) {
-    float ring = exp(-pow((r - uRh * 1.04) / (uRh * 0.05), 2.0));
+    float rx = (r - uRh * 1.04) / (uRh * 0.05);
+    float ring = exp(-rx * rx);
     col += mix(uPink, uWhite, 0.5) * ring * 1.6 * uDisk;
     col *= smoothstep(uRh * 0.98, uRh * 1.02, r);
   }
@@ -98,7 +100,8 @@ void main() {
     col += mix(uPink, uWhite, 0.7) * uCore * exp(-r * 14.0) * 1.2 + uPinkDeep * uCore * exp(-r * 5.0) * 0.12;
   }
   if (uShock > 0.0) {
-    float sw = exp(-pow((r - uShock) / 0.03, 2.0)) * (1.0 - smoothstep(0.6, 1.8, uShock));
+    float sx = (r - uShock) / 0.03;
+    float sw = exp(-sx * sx) * (1.0 - smoothstep(0.6, 1.8, uShock));
     col += uPink * sw * 1.2;
   }
   col = mix(col, uWhite, uFlash);
