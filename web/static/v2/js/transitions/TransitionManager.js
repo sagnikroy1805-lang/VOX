@@ -1,20 +1,23 @@
 // TransitionManager: intercepts page changes and plays a full-screen WebGL
-// transition (Waveform Portal, Cherry-Blossom Storm or Black Hole) between snapshots of the two pages.
+// transition (Waveform Portal, Black Hole, Cherry Branch or Giant Bloom) between snapshots of the two pages.
 //
 // Every transition module exports the same interface:
 //     play(fromTexture, toTexture, options) -> Promise
 // options = { renderer, THREE, width, height, origin:{x,y}, sound, onCovered }
 //
-// Dev toggle: ?transition=portal | blossom | blackhole | fade   (forces one, for demos/tests)
+// Dev toggle: ?transition=portal | blackhole | branch | bloom | fade   (forces one, for demos/tests)
 import * as THREE from "three";
 import { TOKENS, prefersReducedMotion } from "../tokens.js?v=3";
 import { snapshotContent, composite } from "./snapshot.js?v=3";
 import * as sound from "./sound.js?v=3";
 import { play as playPortal } from "./portal.js?v=3";
-import { play as playBlossom } from "./blossom.js?v=3";
 import { play as playBlackhole } from "./blackhole.js?v=3";
+import { play as playBranch } from "./branch.js?v=3";
+import { play as playBloom } from "./bloom.js?v=3";
 
-const MODULES = { portal: playPortal, blossom: playBlossom, blackhole: playBlackhole };
+const MODULES = { portal: playPortal, blackhole: playBlackhole, branch: playBranch, bloom: playBloom };
+// transitions picked at random (the others can be forced with ?transition=name)
+const ROTATION = ["portal", "blackhole", "branch", "bloom"];
 
 export class TransitionManager {
   constructor({ fx, blockerParent = document.body }) {
@@ -76,7 +79,7 @@ export class TransitionManager {
   // Random pick, never the same one more than maxRepeat times in a row.
   pick() {
     if (this.forced && (MODULES[this.forced] || this.forced === "fade")) return this.forced;
-    const names = Object.keys(MODULES);
+    const names = ROTATION;
     let name = names[Math.floor(Math.random() * names.length)];
     const n = TOKENS.transition.maxRepeat;
     const recent = this.history.slice(-n);
