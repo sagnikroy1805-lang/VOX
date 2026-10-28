@@ -43,7 +43,7 @@ export const TOKENS = {
     blur: 1,                                // px background blur (barely there, photo stays sharp)
     overlay: 0.4,                           // black overlay strength
   },
-  transition: { portal: 2.55, blackhole: 2.65, branch: 2.75, bloom: 2.6, fallback: 0.3, maxRepeat: 2 },
+  transition: { blackhole: 2.65, fallback: 0.3, maxRepeat: 2 },
   font: '"Inter Variable", "Inter", "Noto Sans JP", system-ui, "Segoe UI", sans-serif',
 };
 

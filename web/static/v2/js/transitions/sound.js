@@ -29,38 +29,6 @@ function noise(seconds) {
 }
 const ready = () => enabled && ctx && master;
 
-// Vinyl: needle scratch ("wick-a")
-export function scratch(delay = 0) {
-  if (!ready()) return;
-  const t = ctx.currentTime + delay;
-  [0, 0.11].forEach((o, k) => {
-    const n = noise(0.2), bp = ctx.createBiquadFilter(), g = ctx.createGain();
-    bp.type = "bandpass"; bp.Q.value = 2.5;
-    bp.frequency.setValueAtTime(k ? 700 : 2400, t + o);
-    bp.frequency.exponentialRampToValueAtTime(k ? 2600 : 500, t + o + 0.12);
-    g.gain.setValueAtTime(0.0001, t + o); g.gain.exponentialRampToValueAtTime(0.9, t + o + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + o + 0.14);
-    n.connect(bp).connect(g).connect(master); n.start(t + o); n.stop(t + o + 0.2);
-  });
-  // needle thump
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
-  g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-  o.connect(g).connect(master); o.start(t); o.stop(t + 0.18);
-}
-
-// Vinyl: motor spin-up then wind-down
-export function spinUp(delay = 0, up = 1.0, down = 0.7) {
-  if (!ready()) return;
-  const t = ctx.currentTime + delay;
-  const o = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
-  o.type = "sawtooth"; lp.type = "lowpass"; lp.Q.value = 6;
-  o.frequency.setValueAtTime(30, t); o.frequency.exponentialRampToValueAtTime(260, t + up); o.frequency.exponentialRampToValueAtTime(40, t + up + down);
-  lp.frequency.setValueAtTime(200, t); lp.frequency.exponentialRampToValueAtTime(1800, t + up); lp.frequency.exponentialRampToValueAtTime(220, t + up + down);
-  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + up * 0.8); g.gain.exponentialRampToValueAtTime(0.0001, t + up + down);
-  o.connect(lp).connect(g).connect(master); o.start(t); o.stop(t + up + down + 0.05);
-}
-
 // Portal: airy whoosh with a rising tone
 export function whoosh(delay = 0, dur = 1.6) {
   if (!ready()) return;
